@@ -10,6 +10,7 @@ import { FieldMapping, SheetRecord, ContentfulEntryFields } from '../../src/util
 const CMA_TOKEN = process.env.CONTENTFUL_CMA_TOKEN!;
 const SPACE_ID = process.env.CONTENTFUL_SPACE_ID!;
 const ENVIRONMENT_ID = process.env.CONTENTFUL_ENVIRONMENT_ID || 'master';
+const IMPORTER_PASSWORD = process.env.IMPORTER_PASSWORD; // BARU: Ambil password dari ENV
 const LOCALE = 'nl'; // Locale default
 
 // Inisialisasi Klien CMA
@@ -68,14 +69,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         sheetName, 
         range, 
         contentTypeId, 
-        mapping 
+        mapping,
+        password: submittedPassword // BARU: Ambil password dari payload
     } = req.body as {
         spreadsheetUrl: string;
         sheetName: string;
         range: string;
         contentTypeId: string;
         mapping: FieldMapping;
+        password: string; // BARU: Tambahkan tipe password
     };
+
+    // --------------------------------------------------------------------------
+    // 1. VALIDASI PASSWORD
+    // --------------------------------------------------------------------------
+    if (!IMPORTER_PASSWORD) {
+        console.error("Variabel IMPORTER_PASSWORD tidak diset di .env");
+        return res.status(500).json({ error: 'Konfigurasi server tidak lengkap: Password impor tidak diset.' });
+    }
+
+    if (submittedPassword !== IMPORTER_PASSWORD) {
+        console.warn('Upaya impor gagal: Password tidak valid.');
+        return res.status(401).json({ error: 'Akses Ditolak: Password Impor tidak valid.' });
+    }
+    // --------------------------------------------------------------------------
+    
 
     if (!spreadsheetUrl || !contentTypeId || !mapping || Object.keys(mapping).length === 0) {
         return res.status(400).json({ error: 'Data input tidak lengkap.' });
@@ -86,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         const spreadsheetId = extractSpreadsheetId(spreadsheetUrl);
 
-        // 1. AMBIL DATA dari Google Sheets
+        // 2. AMBIL DATA dari Google Sheets
         const records: SheetRecord[] = await getSheetData(spreadsheetId, `${sheetName}!${range}`);
         
         if (records.length === 0) {
@@ -96,7 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const space = await client.getSpace(SPACE_ID);
         const environment: Environment = await space.getEnvironment(ENVIRONMENT_ID);
 
-        // 2. ITERASI & IMPOR MASSAL
+        // 3. ITERASI & IMPOR MASSAL
         for (const record of records) {
             const entryFields: ContentfulEntryFields = {};
 
@@ -114,16 +132,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const entryId = entrySlug.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
 
-            // 3. BANGUN OBJEK FIELD BERDASARKAN MAPPING
+            // 4. BANGUN OBJEK FIELD BERDASARKAN MAPPING
             for (const [contentfulFieldId, template] of Object.entries(mapping)) {
                 
-                // 3a. Abaikan jika mapping kosong
+                // 4a. Abaikan jika mapping kosong
                 if (!template || (Array.isArray(template) && template.every(t => !t))) {
                     continue; 
                 }
                 
-                // 3b. Abaikan Field Tipe Kompleks yang TIDAK DIDUKUNG (hanya listOfLocation)
-                // SEO tidak lagi diabaikan, tapi listOfLocation tetap diabaikan.
+                // 4b. Abaikan Field Tipe Kompleks yang TIDAK DIDUKUNG (hanya listOfLocation)
                 const fieldNameLower = contentfulFieldId.toLowerCase();
                 const isIgnoredType = fieldNameLower === 'listoflocation'; 
                 
@@ -140,11 +157,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     const titleTemplate = template[0].replace(/{|}/g, '').trim();
                     const descriptionTemplate = template[1].replace(/{|}/g, '').trim();
                     
-                    // Substitusi nilai dari record Sheets
                     const seoTitle = record[titleTemplate] || '';
                     const seoDescription = record[descriptionTemplate] || '';
 
-                    // Hanya set field jika kedua nilai ada
                     if (seoTitle && seoDescription) {
                         entryFields[contentfulFieldId] = { 
                             [LOCALE]: {
@@ -204,13 +219,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                     if (isAssetLink) {
                         const linkObject = createContentfulLink(headerValue, 'Asset');
-                        if (linkObject) { // <-- Pengecekan baru
+                        if (linkObject) { 
                             entryFields[contentfulFieldId] = { [LOCALE]: linkObject };
                         }
                     } 
                     else if (isManualEntryLink) {
                         const linkObject = createContentfulLink(headerValue, 'Entry');
-                        if (linkObject) { // <-- Pengecekan baru
+                        if (linkObject) { 
                             entryFields[contentfulFieldId] = { [LOCALE]: linkObject };
                         }
                     }
@@ -221,8 +236,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
 
 
-            // 4. BUAT/UPDATE & PUBLISH
-            const entryObject = { // EntryProps dihilangkan untuk menghindari error 2740
+            // 5. BUAT/UPDATE & PUBLISH
+            const entryObject = { 
                 sys: { id: entryId },
                 fields: entryFields,
             };

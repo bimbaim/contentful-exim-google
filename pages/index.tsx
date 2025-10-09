@@ -147,6 +147,10 @@ export default function ImporterPage() {
     const [sheetName, setSheetName] = useState('Sheet1');
     const [range, setRange] = useState('A1:Z');
     
+    // START: BARIS BARU UNTUK PASSWORD
+    const [password, setPassword] = useState(''); 
+    // END: BARIS BARU UNTUK PASSWORD
+
     const [contentfulFields, setContentfulFields] = useState<ContentfulField[]>([]);
     const [mapping, setMapping] = useState<FieldMapping>({});
     
@@ -194,6 +198,12 @@ export default function ImporterPage() {
         setIsLoading(true);
         setStatusMessage('Memulai impor massal ke Contentful...');
 
+        if (!password) {
+             setStatusMessage('❌ Error: Password Impor tidak boleh kosong.');
+             setIsLoading(false);
+             return;
+        }
+
         if (!spreadsheetUrl || Object.keys(mapping).length === 0) {
             setStatusMessage('❌ Error: Harap isi URL Spreadsheet dan buat minimal satu mapping.');
             setIsLoading(false);
@@ -210,6 +220,7 @@ export default function ImporterPage() {
                     range,
                     contentTypeId: LOCKED_CONTENT_TYPE_ID,
                     mapping,
+                    password, // BARU: Kirim password ke API
                 }),
             });
 
@@ -218,6 +229,7 @@ export default function ImporterPage() {
             if (response.ok) {
                 setStatusMessage(`✅ SUKSES! ${result.importedCount} entri berhasil diimpor/diperbarui.`);
             } else {
+                // Tampilkan pesan error 401/405/500
                 setStatusMessage(`❌ GAGAL: ${result.error || 'Terjadi kesalahan pada server.'}`);
             }
 
@@ -252,8 +264,15 @@ export default function ImporterPage() {
             <form onSubmit={handleImportSubmit}>
                 {/* --- Bagian Input Awal --- */}
                 <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '5px', marginBottom: '30px' }}>
-                    <h2>1. Konfigurasi Data Sumber</h2>
+                    <h2>1. Konfigurasi Akses & Data Sumber</h2>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                        {/* START: FIELD PASSWORD BARU */}
+                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                            placeholder="PASSWORD IMPOR (Set di IMPORTER_PASSWORD ENV)" 
+                            required
+                            style={{ padding: '10px', fontWeight: 'bold', border: '2px solid #ff4500' }} disabled={isLoading} />
+                        {/* END: FIELD PASSWORD BARU */}
+
                         <input type="text" value={spreadsheetUrl} onChange={(e) => setSpreadsheetUrl(e.target.value)}
                             placeholder="URL Google Spreadsheet (Share dengan Service Account!)" style={{ padding: '10px' }} disabled={isLoading} />
                         <div style={{ display: 'flex', gap: '10px' }}>
