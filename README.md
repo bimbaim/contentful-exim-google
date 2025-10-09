@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Contentful Bulk Importer Tool
 
-## Getting Started
+Proyek **Next.js** ini berfungsi sebagai *bulk import tool* spesifik untuk **Contentful**.  
+Aplikasi ini dirancang untuk membaca data terstruktur dari **Google Sheets** dan mengonversinya menjadi entri di Contentful, dengan dukungan penuh untuk **Rich Text**, **Link Asset/Entry**, dan **Object JSON (SEO)**.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Instalasi dan Menjalankan Server
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Setelah Anda mengunduh atau mengkloning repositori ini, lakukan langkah berikut untuk menjalankan proyek secara lokal.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- npm install
+- npm run dev
 
-## Learn More
+## 1. Getting Started
 
-To learn more about Next.js, take a look at the following resources:
+Ikuti langkah-langkah di bawah ini untuk menyiapkan dan menjalankan tool impor Anda.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 1.1 Prasyarat
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pastikan Anda sudah memiliki hal-hal berikut:
+
+- **Node.js** (versi 18 atau lebih baru) dan **npm / yarn / pnpm**.
+- **Akses Contentful**: memiliki **CMA Token (Access Token)** yang valid.
+- **Akses Google Sheets**: file **JSON Service Account Key** dari Google Cloud Console dengan izin baca (*View*) ke spreadsheet Anda.
+
+---
+
+### 1.2 Konfigurasi Lingkungan (`.env.local`)
+
+Buat file bernama `.env.local` di root proyek Anda, lalu isi dengan variabel lingkungan berikut.
+
+```toml
+# --- CONTENTFUL CONFIGURATION ---
+CONTENTFUL_CMA_TOKEN="<Token CMA Contentful Anda>"
+CONTENTFUL_SPACE_ID="<ID Space Contentful Anda>"
+CONTENTFUL_ENVIRONMENT_ID="master"
+# Kunci: ID Content Type yang dikunci di aplikasi Anda
+NEXT_PUBLIC_LOCKED_CONTENT_TYPE_ID="landingPage"
+
+# --- GOOGLE SHEETS API CONFIGURATION ---
+# Gunakan Kunci JSON Service Account.
+# Pastikan Service Account memiliki izin baca (View) ke Google Sheet Anda.
+GOOGLE_PRIVATE_KEY='<Kunci Private dari JSON Service Account, termasuk \\n>'
+GOOGLE_CLIENT_EMAIL="<Email Service Account Anda>"
+
+
+.
