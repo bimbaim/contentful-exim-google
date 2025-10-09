@@ -203,10 +203,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     const isAssetLink = fieldNameLower.includes('image') || fieldNameLower.includes('banner') || fieldNameLower.includes('iframe');
 
                     if (isAssetLink) {
-                        entryFields[contentfulFieldId] = { [LOCALE]: createContentfulLink(headerValue, 'Asset') };
+                        const linkObject = createContentfulLink(headerValue, 'Asset');
+                        if (linkObject) { // <-- Pengecekan baru
+                            entryFields[contentfulFieldId] = { [LOCALE]: linkObject };
+                        }
                     } 
                     else if (isManualEntryLink) {
-                        entryFields[contentfulFieldId] = { [LOCALE]: createContentfulLink(headerValue, 'Entry') };
+                        const linkObject = createContentfulLink(headerValue, 'Entry');
+                        if (linkObject) { // <-- Pengecekan baru
+                            entryFields[contentfulFieldId] = { [LOCALE]: linkObject };
+                        }
                     }
                     else {
                         entryFields[contentfulFieldId] = { [LOCALE]: headerValue };

@@ -28,6 +28,6 @@ export type FieldMapping = {
 // FIX: Mengganti 'any' dengan tipe yang lebih spesifik (string untuk teks, object/object[] untuk RichText/Link/JSON Object)
 export type ContentfulEntryFields = {
     [key: string]: {
-        [locale: string]: string | object | object[];
+        [locale: string]: string | object | object[] | null; 
     };
 };
