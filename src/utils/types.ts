@@ -18,14 +18,16 @@ export interface ContentfulField {
 
 // --- 3. Tipe Data Mapping dari Frontend ---
 // Kunci adalah Contentful Field ID (e.g., 'title'), Nilai adalah template Sheets atau array template.
+// Menghapus 'undefined' karena mapping yang kosong diabaikan di backend
 export type FieldMapping = {
-    [contentfulFieldId: string]: string | string[] | undefined;
+    [contentfulFieldId: string]: string | string[];
 };
 
 // --- 4. Tipe Data Final Entry Contentful ---
 // Struktur dasar yang akan dikirim ke Contentful CMA
+// FIX: Mengganti 'any' dengan tipe yang lebih spesifik (string untuk teks, object/object[] untuk RichText/Link/JSON Object)
 export type ContentfulEntryFields = {
     [key: string]: {
-        [locale: string]: any;
+        [locale: string]: string | object | object[];
     };
 };

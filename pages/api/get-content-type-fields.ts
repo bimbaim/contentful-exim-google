@@ -45,9 +45,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         return res.status(200).json({ fields });
 
-    } catch (error: any) {
-        console.error('Error fetching Content Type:', error.message);
-        // Berikan pesan error yang jelas jika Content Type tidak ditemukan atau Token salah
-        return res.status(500).json({ error: 'Failed to fetch Content Type schema. Check ID or CMA Token.', details: error.message });
+    } catch (error: unknown) {
+        console.error('Error fetching Content Type fields:', error);
+        
+        let errorMessage = 'Gagal mengambil data Content Type.';
+        
+        // Melakukan type assertion/check sebelum mengakses properti 'message'
+        if (error && typeof error === 'object' && 'message' in error) {
+            errorMessage = (error as { message: string }).message; 
+        }
+
+        res.status(500).json({ error: errorMessage });
     }
 }
