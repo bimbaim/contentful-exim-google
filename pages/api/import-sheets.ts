@@ -237,37 +237,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 
             // 5. BUAT/UPDATE & PUBLISH
-            // 5. FIND OR CREATE + UPDATE + PUBLISH
 try {
-    // 5.1. Check if entry already exists by slug
-    const existing = await environment.getEntries({
-        content_type: contentTypeId,
-        'fields.slug': entrySlug,
-        limit: 1,
+  const existing = await environment.getEntries({
+    content_type: contentTypeId,
+    'fields.slug': entrySlug,
+    limit: 1,
+  });
+
+  let entry: Entry;
+
+  if (existing.items.length > 0) {
+    // ✅ Update existing entry
+    entry = existing.items[0];
+
+    // Merge only locale-level fields
+    Object.entries(entryFields).forEach(([fieldId, value]) => {
+      entry.fields[fieldId] = value;
     });
 
-    let entry: Entry;
+    entry = await entry.update(); // ✅ Get latest version
+    console.log(`[UPDATED] Entry "${entrySlug}" (${entry.sys.id})`);
+  } else {
+    // 🚀 Create new entry
+    entry = await environment.createEntryWithId(contentTypeId, entryId, {
+      fields: entryFields,
+    });
+    console.log(`[CREATED] Entry "${entrySlug}" (${entryId})`);
+  }
 
-    if (existing.items.length > 0) {
-        // ✅ Update existing entry
-        entry = existing.items[0];
-        entry.fields = { ...entry.fields, ...entryFields };
-        await entry.update();
-        console.log(`[UPDATED] Entry "${entrySlug}" (${entry.sys.id})`);
-    } else {
-        // 🚀 Create new entry
-        entry = await environment.createEntryWithId(contentTypeId, entryId, {
-            fields: entryFields,
-        });
-        console.log(`[CREATED] Entry "${entrySlug}" (${entryId})`);
-    }
+  // ✅ Always publish latest version
+  entry = await entry.publish();
+  console.log(`[PUBLISHED] Entry "${entrySlug}"`);
+  importedCount++;
 
-    // 5.2. Publish entry
-    await entry.publish();
-    importedCount++;
 } catch (err) {
-    console.error(`❌ Failed to create/update entry for slug "${entrySlug}"`, err);
+  console.error(`❌ Failed to create/update entry for slug "${entrySlug}"`, err);
 }
+
         }
 
         return res.status(200).json({ importedCount });
